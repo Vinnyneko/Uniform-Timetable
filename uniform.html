@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Uniform Timetable</title>
+
+  <style>
+    :root {
+      --page: #ffffff;
+      --header: #dcecff;
+      --week: #eef6ff;
+      --grid: #8ab6e8;
+      --prac: #c8e3ff;
+      --form: #e2efff;
+      --text: #173b70;
+      --custom-pattern-size: 80px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 24px;
+      background-color: var(--page);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+    }
+
+    .top-bar {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+    }
+
+    .top-icons {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-button {
+      display: grid;
+      width: 44px;
+      height: 44px;
+      place-items: center;
+      padding: 6px;
+      border: 1px solid var(--grid);
+      border-radius: 50%;
+      background: white;
+      color: var(--text);
+      font-size: 1.25rem;
+      cursor: pointer;
+    }
+
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible {
+      outline: 2px solid var(--text);
+      outline-offset: 2px;
+    }
+
+    .school-period {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin: 0 auto 12px;
+    }
+
+    .school-period label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: bold;
+    }
+
+    select,
+    button {
+      padding: 7px 10px;
+      border: 1px solid var(--grid);
+      border-radius: 7px;
+      background: white;
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .panel-area {
+      max-width: 900px;
+      margin: 0 auto 18px;
+    }
+
+    .panel-area[hidden],
+    .panel-area > [hidden] {
+      display: none;
+    }
+
+    .controls,
+    .settings-panel {
+      padding: 14px;
+      border: 2px solid var(--grid);
+      border-radius: 12px;
+      background: white;
+      box-shadow: 0 6px 18px #17243b26;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 12px 20px;
+    }
+
+    .control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    input[type="color"] {
+      width: 36px;
+      height: 30px;
+      padding: 2px;
+      cursor: pointer;
+    }
+
+    input[type="file"] {
+      max-width: 220px;
+      font: inherit;
+    }
+
+    .settings-panel h2 {
+      margin: 0 0 12px;
+      font-size: 1.2rem;
+    }
+
+    .settings-group {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--grid);
+    }
+
+    .settings-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .settings-group h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .setting-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 16px;
+    }
+
+    .setting-row label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .setting-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--text);
+    }
+
+    .danger-button {
+      border-color: #b42318;
+      color: #b42318;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 600px;
+      table-layout: fixed;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th,
+    td {
+      height: 48px;
+      padding: 8px;
+      border: 2px solid var(--grid);
+      text-align: center;
+    }
+
+    th {
+      background: var(--header);
+    }
+
+    th:first-child,
+    td:first-child {
+      width: 90px;
+    }
+
+    td:first-child {
+      background: var(--week);
+      font-weight: bold;
+    }
+
+    td.day {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    td.day:hover {
+      filter: brightness(0.95);
+    }
+
+    td.prac {
+      background: var(--prac);
+      font-weight: bold;
+    }
+
+    td.form {
+      background: var(--form);
+      font-weight: bold;
+    }
+
+    body.pattern-paws {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ctext x='4' y='38' font-size='24'%3E🐾%3C/text%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 60px 60px;
+    }
+
+    body.pattern-dots {
+      background-image: radial-gradient(var(--grid) 1px, transparent 1px);
+      background-size: 18px 18px;
+    }
+
+    body.pattern-stripes {
+      background-image: repeating-linear-gradient(
+        135deg,
+        transparent,
+        transparent 12px,
+        var(--grid) 12px,
+        var(--grid) 14px
+      );
+    }
+
+    body.pattern-checker {
+      background-image:
+        linear-gradient(45deg, var(--grid) 25%, transparent 25%),
+        linear-gradient(-45deg, var(--grid) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, var(--grid) 75%),
+        linear-gradient(-45deg, transparent 75%, var(--grid) 75%);
+      background-size: 24px 24px;
+      background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+    }
+
+    body.pattern-none {
+      background-image: none;
+    }
+
+    body.custom-background {
+      background-repeat: repeat;
+      background-position: top left;
+      background-size: var(--custom-pattern-size, 80px);
+    }
+
+    .notes-button {
+      position: fixed;
+      z-index: 10;
+      right: 20px;
+      bottom: 20px;
+      padding: 10px 14px;
+      border: 1px solid var(--grid);
+      border-radius: 24px;
+      background: white;
+      color: var(--text);
+      box-shadow: 0 4px 14px #22324a30;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .notes-panel {
+      position: fixed;
+      z-index: 11;
+      right: 20px;
+      bottom: 72px;
+      width: min(340px, calc(100vw - 40px));
+      max-height: 60vh;
+      overflow-y: auto;
+      padding: 14px 16px;
+      border: 1px solid var(--grid);
+      border-radius: 12px;
+      background: white;
+      color: var(--text);
+      box-shadow: 0 6px 18px #17243b30;
+    }
+
+    .notes-panel[hidden] {
+      display: none;
+    }
+
+    .notes-panel h2 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+    }
+
+    .notes-panel p {
+      margin: 0;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .hidden-feature {
+      display: none !important;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        margin: 14px;
+      }
+
+      .icon-button {
+        width: 40px;
+        height: 40px;
+      }
+
+      h1 {
+        padding: 0 88px;
+        font-size: 1.35rem;
+      }
+
+      .notes-button {
+        right: 12px;
+        bottom: 12px;
+      }
+
+      .notes-panel {
+        right: 12px;
+        bottom: 64px;
+      }
+    }
+  </style>
+</head>
+
+<body class="pattern-none">
+  <div class="top-bar">
+    <div class="top-icons">
+      <button
+        id="appearanceButton"
+        class="icon-button"
+        type="button"
+        aria-label="Open timetable customisation"
+        aria-expanded="false"
+        title="Customise timetable"
+      >🎨</button>
+
+      <button
+        id="settingsButton"
+        class="icon-button"
+        type="button"
+        aria-label="Open settings"
+        aria-expanded="false"
+        title="Settings"
+      >⚙️</button>
+    </div>
+
+    <h1>Uniform Timetable</h1>
+  </div>
+
+  <div class="school-period" id="schoolPeriod">
+    <label for="year">Year
+      <select id="year">
+        <option value="">Select year</option>
+        <option>Year 7</option>
+        <option>Year 8</option>
+        <option>Year 9</option>
+        <option>Year 10</option>
+        <option>Year 11</option>
+        <option>Year 12</option>
+      </select>
+    </label>
+
+    <label for="term">Term
+      <select id="term">
+        <option value="">Select term</option>
+        <option>Term 1</option>
+        <option>Term 2</option>
+        <option>Term 3</option>
+        <option>Term 4</option>
+      </select>
+    </label>
+  </div>
+
+  <div id="panelArea" class="panel-area" hidden>
+    <div id="customisePanel" class="controls" hidden>
+      <label class="control">
+        Page colour
+        <input type="color" data-colour="page" value="#ffffff">
+      </label>
+
+      <label class="control">
+        Header colour
+        <input type="color" data-colour="header" value="#dcecff">
+      </label>
+
+      <label class="control">
+        Week colour
+        <input type="color" data-colour="week" value="#eef6ff">
+      </label>
+
+      <label class="control">
+        Grid colour
+        <input type="color" data-colour="grid" value="#8ab6e8">
+      </label>
+
+      <label class="control">
+        Prac colour
+        <input type="color" data-colour="prac" value="#c8e3ff">
+      </label>
+
+      <label class="control">
+        Form colour
+        <input type="color" data-colour="form" value="#e2efff">
+      </label>
+
+      <label class="control">
+        Built-in pattern
+        <select id="pattern">
+          <option value="none">None</option>
+          <option value="paws">Paw prints</option>
+          <option value="dots">Dots</option>
+          <option value="stripes">Stripes</option>
+          <option value="checker">Checker</option>
+        </select>
+      </label>
+
+      <label class="control">
+        Upload repeating pattern image
+        <input id="backgroundImageUpload" type="file" accept="image/*">
+      </label>
+
+      <label class="control">
+        Pattern size
+        <select id="patternSize">
+          <option value="40">Tiny</option>
+          <option value="80" selected>Small</option>
+          <option value="140">Medium</option>
+          <option value="220">Large</option>
+        </select>
+      </label>
+
+      <button id="removeBackgroundImage" type="button">
+        Remove custom pattern
+      </button>
+
+      <button id="resetStyle" type="button">Reset style</button>
+    </div>
+
+    <section id="settingsPanel" class="settings-panel" hidden>
+      <h2>Settings</h2>
+
+      <div class="settings-group">
+        <h3>Display</h3>
+
+        <div class="setting-row">
+          <label for="showTitle">Show timetable title</label>
+          <input id="showTitle" type="checkbox" checked>
+        </div>
+
+        <div class="setting-row">
+          <label for="showYearTerm">Show Year and Term selectors</label>
+          <input id="showYearTerm" type="checkbox" checked>
+        </div>
+
+        <div class="setting-row">
+          <label for="showWeekColumn">Show week numbers</label>
+          <input id="showWeekColumn" type="checkbox" checked>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <h3>Timetable</h3>
+
+        <div class="setting-row">
+          <label for="weekCount">Number of weeks</label>
+          <select id="weekCount">
+            <option value="5">5 weeks</option>
+            <option value="6">6 weeks</option>
+            <option value="7">7 weeks</option>
+            <option value="8">8 weeks</option>
+            <option value="9">9 weeks</option>
+            <option value="10" selected>10 weeks</option>
+            <option value="11">11 weeks</option>
+            <option value="12">12 weeks</option>
+          </select>
+        </div>
+
+        <div class="setting-row">
+          <label for="confirmClear">Confirm before clearing selections</label>
+          <input id="confirmClear" type="checkbox" checked>
+        </div>
+
+        <button id="clearSelections" class="danger-button" type="button">
+          Clear all selections
+        </button>
+      </div>
+
+      <div class="settings-group">
+        <h3>Other</h3>
+        <div class="setting-row">
+          <label for="resetSettings">Reset settings to defaults</label>
+          <button id="resetSettings" type="button">Reset settings</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="week-heading">Week</th>
+          <th>Monday</th>
+          <th>Tuesday</th>
+          <th>Wednesday</th>
+          <th>Thursday</th>
+          <th>Friday</th>
+        </tr>
+      </thead>
+      <tbody id="timetable"></tbody>
+    </table>
+  </div>
+
+  <button
+    id="notesButton"
+    class="notes-button"
+    type="button"
+    aria-expanded="false"
+    aria-controls="notesPanel"
+  >📝 Notes &amp; Updates</button>
+
+  <section id="notesPanel" class="notes-panel" hidden>
+    <h2>Notes &amp; Updates</h2>
+    <p>V5 is outttt &gt;:3 i added more customization flexibility by adding the Multi-colour update. The update makes it so you can change the colour of anything and everything (still in beta tho so i will add more later). Anyway have hope u have funn with the Multi-Colour updateeeee ദ്ദി(｡•̀ ,&lt;)~✩‧₊</p>
+  </section>
+
+  <script>
+    const timetable = document.getElementById("timetable");
+    const options = ["", "Prac", "Form"];
+    const timetableStorageKey = "uniformTimetableData";
+    const settingsStorageKey = "uniformTimetableSettings";
+    const backgroundPatternStorageKey = "uniformBackgroundPattern";
+    const patternSizeStorageKey = "uniformBackgroundPatternSize";
+
+    let savedTimetable = {};
+    let settings = {
+      weekCount: 10,
+      showTitle: true,
+      showYearTerm: true,
+      showWeekColumn: true,
+      confirmClear: true
+    };
+
+    try {
+      savedTimetable = JSON.parse(
+        localStorage.getItem(timetableStorageKey) || "{}"
+      );
+    } catch {
+      savedTimetable = {};
+    }
+
+    try {
+      const savedSettings = JSON.parse(
+        localStorage.getItem(settingsStorageKey) || "{}"
+      );
+      delete savedSettings.showNotesButton;
+      settings = { ...settings, ...savedSettings };
+    } catch {
+      // Use default settings if saved settings are invalid.
+    }
+
+    function saveSettings() {
+      localStorage.setItem(settingsStorageKey, JSON.stringify(settings));
+    }
+
+    function drawTimetable() {
+      timetable.replaceChildren();
+
+      for (let week = 1; week <= Number(settings.weekCount); week++) {
+        const row = document.createElement("tr");
+        const weekCell = document.createElement("td");
+        weekCell.className = "week-cell";
+        weekCell.textContent = `Week ${week}`;
+        row.appendChild(weekCell);
+
+        for (let day = 0; day < 5; day++) {
+          const cell = document.createElement("td");
+          const key = `${week}-${day}`;
+          const state = savedTimetable[key] || 0;
+
+          cell.className = "day";
+          cell.dataset.state = state;
+          cell.textContent = options[state];
+          cell.classList.toggle("prac", options[state] === "Prac");
+          cell.classList.toggle("form", options[state] === "Form");
+
+          cell.addEventListener("click", () => {
+            const nextState =
+              (Number(cell.dataset.state) + 1) % options.length;
+
+            cell.dataset.state = nextState;
+            cell.textContent = options[nextState];
+            cell.classList.toggle("prac", options[nextState] === "Prac");
+            cell.classList.toggle("form", options[nextState] === "Form");
+
+            if (nextState === 0) {
+              delete savedTimetable[key];
+            } else {
+              savedTimetable[key] = nextState;
+            }
+
+            localStorage.setItem(
+              timetableStorageKey,
+              JSON.stringify(savedTimetable)
+            );
+          });
+
+          row.appendChild(cell);
+        }
+
+        timetable.appendChild(row);
+      }
+
+      applyDisplaySettings();
+    }
+
+    function applyDisplaySettings() {
+      document.querySelector(".top-bar h1").classList.toggle(
+        "hidden-feature",
+        !settings.showTitle
+      );
+
+      document.getElementById("schoolPeriod").classList.toggle(
+        "hidden-feature",
+        !settings.showYearTerm
+      );
+
+      document.querySelectorAll(".week-heading, .week-cell").forEach(element => {
+        element.classList.toggle(
+          "hidden-feature",
+          !settings.showWeekColumn
+        );
+      });
+    }
+
+    const appearanceButton = document.getElementById("appearanceButton");
+    const settingsButton = document.getElementById("settingsButton");
+    const panelArea = document.getElementById("panelArea");
+    const customisePanel = document.getElementById("customisePanel");
+    const settingsPanel = document.getElementById("settingsPanel");
+
+    function showPanel(panel, activeButton, otherPanel, otherButton) {
+      const alreadyOpen = !panel.hidden;
+
+      panel.hidden = true;
+      otherPanel.hidden = true;
+      appearanceButton.setAttribute("aria-expanded", "false");
+      settingsButton.setAttribute("aria-expanded", "false");
+
+      if (alreadyOpen) {
+        panelArea.hidden = true;
+        return;
+      }
+
+      panelArea.hidden = false;
+      panel.hidden = false;
+      activeButton.setAttribute("aria-expanded", "true");
+      otherButton.setAttribute("aria-expanded", "false");
+    }
+
+    appearanceButton.addEventListener("click", () => {
+      showPanel(customisePanel, appearanceButton, settingsPanel, settingsButton);
+    });
+
+    settingsButton.addEventListener("click", () => {
+      showPanel(settingsPanel, settingsButton, customisePanel, appearanceButton);
+    });
+
+    document.querySelectorAll("[data-colour]").forEach(input => {
+      const name = input.dataset.colour;
+      const storageKey = `uniformColour-${name}`;
+      const savedColour = localStorage.getItem(storageKey);
+
+      if (savedColour) {
+        input.value = savedColour;
+        document.documentElement.style.setProperty(`--${name}`, savedColour);
+      }
+
+      input.addEventListener("input", () => {
+        document.documentElement.style.setProperty(`--${name}`, input.value);
+        localStorage.setItem(storageKey, input.value);
+      });
+    });
+
+    const patternSelect = document.getElementById("pattern");
+    const savedPattern = localStorage.getItem("uniformPattern");
+
+    if (savedPattern) {
+      patternSelect.value = savedPattern;
+    }
+
+    const backgroundImageUpload =
+      document.getElementById("backgroundImageUpload");
+    const removeBackgroundImageButton =
+      document.getElementById("removeBackgroundImage");
+    const patternSizeSelect = document.getElementById("patternSize");
+
+    function applySelectedPattern() {
+      const customPattern = localStorage.getItem(backgroundPatternStorageKey);
+
+      if (customPattern) {
+        document.body.className = "custom-background";
+        document.body.style.backgroundImage = `url("${customPattern}")`;
+      } else {
+        document.body.className = `pattern-${patternSelect.value}`;
+        document.body.style.backgroundImage = "";
+      }
+    }
+
+    const savedPatternSize = localStorage.getItem(patternSizeStorageKey);
+    if (savedPatternSize) {
+      patternSizeSelect.value = savedPatternSize;
+    }
+
+    document.documentElement.style.setProperty(
+      "--custom-pattern-size",
+      `${patternSizeSelect.value}px`
+    );
+
+    applySelectedPattern();
+
+    patternSelect.addEventListener("change", () => {
+      localStorage.setItem("uniformPattern", patternSelect.value);
+      applySelectedPattern();
+    });
+
+    backgroundImageUpload.addEventListener("change", event => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        alert("Please choose an image file.");
+        event.target.value = "";
+        return;
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Please choose an image smaller than 2 MB.");
+        event.target.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.addEventListener("load", () => {
+        try {
+          localStorage.setItem(
+            backgroundPatternStorageKey,
+            reader.result
+          );
+          applySelectedPattern();
+        } catch {
+          alert("This image could not be saved. Try a smaller image.");
+        }
+      });
+
+      reader.addEventListener("error", () => {
+        alert("The image could not be read. Please try another file.");
+      });
+
+      reader.readAsDataURL(file);
+    });
+
+    patternSizeSelect.addEventListener("change", () => {
+      const size = patternSizeSelect.value;
+
+      document.documentElement.style.setProperty(
+        "--custom-pattern-size",
+        `${size}px`
+      );
+
+      localStorage.setItem(patternSizeStorageKey, size);
+    });
+
+    removeBackgroundImageButton.addEventListener("click", () => {
+      localStorage.removeItem(backgroundPatternStorageKey);
+      backgroundImageUpload.value = "";
+      applySelectedPattern();
+    });
+
+    const settingControls = {
+      showTitle: document.getElementById("showTitle"),
+      showYearTerm: document.getElementById("showYearTerm"),
+      showWeekColumn: document.getElementById("showWeekColumn"),
+      confirmClear: document.getElementById("confirmClear")
+    };
+
+    Object.entries(settingControls).forEach(([key, input]) => {
+      input.checked = Boolean(settings[key]);
+
+      input.addEventListener("change", () => {
+        settings[key] = input.checked;
+        saveSettings();
+        applyDisplaySettings();
+      });
+    });
+
+    const weekCountSelect = document.getElementById("weekCount");
+    weekCountSelect.value = String(settings.weekCount);
+
+    weekCountSelect.addEventListener("change", () => {
+      settings.weekCount = Number(weekCountSelect.value);
+      saveSettings();
+      drawTimetable();
+    });
+
+    document.getElementById("clearSelections").addEventListener("click", () => {
+      const shouldClear =
+        !settings.confirmClear ||
+        confirm("Clear every Prac and Form selection from the timetable?");
+
+      if (!shouldClear) return;
+
+      savedTimetable = {};
+      localStorage.removeItem(timetableStorageKey);
+      drawTimetable();
+    });
+
+    document.getElementById("resetSettings").addEventListener("click", () => {
+      settings = {
+        weekCount: 10,
+        showTitle: true,
+        showYearTerm: true,
+        showWeekColumn: true,
+        confirmClear: true
+      };
+
+      saveSettings();
+
+      Object.entries(settingControls).forEach(([key, input]) => {
+        input.checked = settings[key];
+      });
+
+      weekCountSelect.value = String(settings.weekCount);
+      drawTimetable();
+    });
+
+    document.getElementById("resetStyle").addEventListener("click", () => {
+      ["page", "header", "week", "grid", "prac", "form"].forEach(name => {
+        localStorage.removeItem(`uniformColour-${name}`);
+      });
+
+      localStorage.removeItem("uniformPattern");
+      localStorage.removeItem(backgroundPatternStorageKey);
+      localStorage.removeItem(patternSizeStorageKey);
+      location.reload();
+    });
+
+    document.getElementById("notesButton").addEventListener("click", event => {
+      const button = event.currentTarget;
+      const panel = document.getElementById("notesPanel");
+      const opening = panel.hidden;
+
+      panel.hidden = !opening;
+      button.setAttribute("aria-expanded", String(opening));
+    });
+
+    drawTimetable();
+  </script>
+</body>
+</html>  
